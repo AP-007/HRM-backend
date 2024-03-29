@@ -26,21 +26,25 @@ router.post("/adminlogin", (req, res) => {
   });
 });
 
-router.get('/category', (req, res) => {
-    const sql = "SELECT * FROM category";
+router.get('/department', (req, res) => {
+    const sql = "SELECT * FROM department";
     con.query(sql, (err, result) => {
         if(err) return res.json({Status: false, Error: "Query Error"})
         return res.json({Status: true, Result: result})
     })
 })
 
-router.post('/add_category', (req, res) => {
-    const sql = "INSERT INTO category (`name`) VALUES (?)"
-    con.query(sql, [req.body.category], (err, result) => {
-        if(err) return res.json({Status: false, Error: "Query Error"})
-        return res.json({Status: true})
-    })
-})
+router.post('/add_department', (req, res) => {
+    const name = req.body.name;
+    const sql = "INSERT INTO department (name) VALUES (?)";
+    con.query(sql, [name], (err, result) => {
+        if (err) {
+            console.error("Error inserting data:", err);
+            return res.json({ Status: false, Error: "Query Error" });
+        }
+        return res.json({ Status: true });
+    });
+});
 
 // image upload 
 const storage = multer.diskStorage({
@@ -67,7 +71,7 @@ router.post('/add_employee',upload.single('image'), (req, res) => {
             req.body.email,
             hash,
             req.body.address,
-            req.body.salary, 
+            req.body.salary,
             req.file.filename,
             req.body.category_id
         ]
