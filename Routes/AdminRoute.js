@@ -26,7 +26,8 @@ router.post("/adminlogin", (req, res) => {
   });
 });
 
-router.get('/department', (req, res) => {
+// Route for Department
+router.get('/departments', (req, res) => {
     const sql = "SELECT * FROM department";
     con.query(sql, (err, result) => {
         if(err) return res.json({Status: false, Error: "Query Error"})
@@ -34,98 +35,520 @@ router.get('/department', (req, res) => {
     })
 })
 
-router.post('/add_department', (req, res) => {
-    const name = req.body.name;
+router.post('/departments/create', (req, res) => {
+    const { name } = req.body;
+    if (!name) {
+        return res.status(400).json({ Status: false, Error: "Department name is required" });
+    }
     const sql = "INSERT INTO department (name) VALUES (?)";
     con.query(sql, [name], (err, result) => {
         if (err) {
             console.error("Error inserting data:", err);
-            return res.json({ Status: false, Error: "Query Error" });
+            return res.status(500).json({ Status: false, Error: "Query Error" });
         }
-        return res.json({ Status: true });
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, name: name } });
     });
 });
 
-// image upload 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'Public/Images')
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.fieldname + "_" + Date.now() + path.extname(file.originalname))
-    }
-})
-const upload = multer({
-    storage: storage
-})
-// end imag eupload 
-
-router.post('/add_employee',upload.single('image'), (req, res) => {
-    const sql = `INSERT INTO employee 
-    (name,email,password, address, salary,image, category_id) 
-    VALUES (?)`;
-    bcrypt.hash(req.body.password, 10, (err, hash) => {
-        if(err) return res.json({Status: false, Error: "Query Error"})
-        const values = [
-            req.body.name,
-            req.body.email,
-            hash,
-            req.body.address,
-            req.body.salary,
-            req.file.filename,
-            req.body.category_id
-        ]
-        con.query(sql, [values], (err, result) => {
-            if(err) return res.json({Status: false, Error: err})
-            return res.json({Status: true})
-        })
-    })
-})
-
-router.get('/employee', (req, res) => {
-    const sql = "SELECT * FROM employee";
-    con.query(sql, (err, result) => {
-        if(err) return res.json({Status: false, Error: "Query Error"})
-        return res.json({Status: true, Result: result})
-    })
-})
-
-router.get('/employee/:id', (req, res) => {
+router.get('/departments/:id', (req, res) => {
     const id = req.params.id;
-    const sql = "SELECT * FROM employee WHERE id = ?";
+    const sql = "SELECT * FROM department WHERE id = ?";
     con.query(sql,[id], (err, result) => {
         if(err) return res.json({Status: false, Error: "Query Error"})
         return res.json({Status: true, Result: result})
     })
-})
+});
 
-router.put('/edit_employee/:id', (req, res) => {
+router.put('/departments/update/:id', (req, res) => {
     const id = req.params.id;
-    const sql = `UPDATE employee 
-        set name = ?, email = ?, salary = ?, address = ?, category_id = ? 
-        Where id = ?`
+    const sql = `UPDATE department
+        SET name = ?
+        WHERE id = ?`;
     const values = [
         req.body.name,
-        req.body.email,
-        req.body.salary,
-        req.body.address,
-        req.body.category_id
-    ]
-    con.query(sql,[...values, id], (err, result) => {
-        if(err) return res.json({Status: false, Error: "Query Error"+err})
-        return res.json({Status: true, Result: result})
-    })
-})
+        id
+    ];
+    con.query(sql, values, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
 
-router.delete('/delete_employee/:id', (req, res) => {
+
+router.delete('/departments/delete/:id', (req, res) => {
     const id = req.params.id;
-    const sql = "delete from employee where id = ?"
+    const sql = "delete from department where id = ?"
     con.query(sql,[id], (err, result) => {
         if(err) return res.json({Status: false, Error: "Query Error"+err})
         return res.json({Status: true, Result: result})
     })
 })
 
+
+// Route for Position
+router.get('/positions', (req, res) => {
+    const sql = "SELECT * FROM position";
+    con.query(sql, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.post('/positions/create', (req, res) => {
+    const { title, salary, responsibilities } = req.body;
+    if (!title || !salary || !responsibilities) {
+        return res.status(400).json({ Status: false, Error: "Title, salary, and responsibilities are required" });
+    }
+    const sql = "INSERT INTO `position` (title, salary, responsibilities) VALUES (?, ?, ?)";
+    const responsibilitiesJson = JSON.stringify(responsibilities)
+    const values = [
+        title,
+        salary,
+        responsibilitiesJson
+    ];
+    con.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("Error inserting data:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, title, salary, responsibilities } });
+    });
+});
+
+router.get('/positions/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "SELECT * FROM position WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.put('/positions/update/:id', (req, res) => {
+    const id = req.params.id;
+    const { title, salary, responsibilities } = req.body;
+    const sql = `UPDATE position
+        SET title = ?, salary = ?, responsibilities = ?
+        WHERE id = ?`;
+    const values = [
+        title,
+        salary,
+        JSON.stringify(responsibilities),
+        id
+    ];
+    con.query(sql, values, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.delete('/positions/delete/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM position WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+// Route for employees
+router.get('/employees', (req, res) => {
+    const sql = "SELECT * FROM employees";
+    con.query(sql, (err, result) => {
+        if(err) return res.status(500).json({ Status: false, Error: "Query Error" });
+        return res.status(200).json({ Status: true, Result: result });
+    });
+});
+
+router.post('/employees/create', (req, res) => {
+    const { name, email, password, address, department_id, position_id } = req.body;
+    console.log(req.body)
+    if (!name) {
+        return res.status(400).json({ Status: false, Error: "Name field is required" });
+    }
+    if (!email) {
+        return res.status(400).json({ Status: false, Error: "Email field is required" });
+    }
+    if (!address) {
+        return res.status(400).json({ Status: false, Error: "Address field is required" });
+    }
+    if (!department_id) {
+        return res.status(400).json({ Status: false, Error: "Department field is required" });
+    }
+    if (!position_id) {
+        return res.status(400).json({ Status: false, Error: "Position field is required" });
+    }
+
+    bcrypt.hash(password, 10, (err, hash) => {
+        if(err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
+        const sql = `INSERT INTO employees
+            (name, email, password, address, department_id, position_id) 
+            VALUES (?, ?, ?, ?, ?, ?)`;
+        const values = [
+            name,
+            email,
+            hash,
+            address,
+            department_id,
+            position_id
+        ];
+        con.query(sql, values, (err, result) => {
+            if(err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+            return res.status(201).json({ Status: true, Result: { id: result.insertId, name, email, address, department_id, position_id } });
+        });
+    });
+});
+
+router.get('/employees/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "SELECT * FROM employees WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.status(500).json({ Status: false, Error: "Query Error" });
+        return res.status(200).json({ Status: true, Result: result });
+    });
+});
+
+router.put('/employees/update/:id', (req, res) => {
+    const id = req.params.id;
+    const { name, email, password, address, department_id, position_id } = req.body;
+    if (!name) {
+        return res.status(400).json({ Status: false, Error: "Name field is required" });
+    }
+    if (!email) {
+        return res.status(400).json({ Status: false, Error: "Email field is required" });
+    }
+    if (!address) {
+        return res.status(400).json({ Status: false, Error: "Address field is required" });
+    }
+    if (!department_id) {
+        return res.status(400).json({ Status: false, Error: "Department field is required" });
+    }
+    if (!position_id) {
+        return res.status(400).json({ Status: false, Error: "Position field is required" });
+    }
+
+    let sql;
+    let values;
+    if (password) {
+        bcrypt.hash(password, 10, (err, hash) => {
+            if(err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
+            sql = `UPDATE employees
+                SET name = ?, email = ?, password = ?, address = ?, department_id = ?, position_id = ?
+                WHERE id = ?`;
+            values = [
+                name,
+                email,
+                hash,
+                address,
+                department_id,
+                position_id,
+                id
+            ];
+            con.query(sql, values, (err, result) => {
+                if(err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+                return res.status(200).json({ Status: true, Result: result });
+            });
+        });
+    } else {
+        sql = `UPDATE employees
+            SET name = ?, email = ?, address = ?, department_id = ?, position_id = ?
+            WHERE id = ?`;
+        values = [
+            name,
+            email,
+            address,
+            department_id,
+            position_id,
+            id
+        ];
+        con.query(sql, values, (err, result) => {
+            if(err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+            return res.status(200).json({ Status: true, Result: result });
+        });
+    }
+});
+
+router.delete('/employees/delete/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM employees WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        return res.status(200).json({ Status: true, Result: result });
+    });
+});
+
+// Route for Benefits
+router.get('/benefits', (req, res) => {
+    const sql = "SELECT * FROM benefits";
+    con.query(sql, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.post('/benefits/create', (req, res) => {
+    const { health_insurance, retirement_plan, employee_id } = req.body;
+    if (!health_insurance ) {
+        return res.status(400).json({ Status: false, Error: "Health Insurance is required" });
+    }
+    if (!employee_id) {
+        return res.status(400).json({ Status: false, Error: "Associate employee is required" });
+    }
+
+    const sql = "INSERT INTO benefits (health_insurance, retirement_plan, employee_id) VALUES (?, ?, ?)";
+    const retirementPlanJson = JSON.stringify(retirement_plan);
+    const values = [
+        health_insurance,
+        retirementPlanJson,
+        employee_id
+    ];
+    con.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("Error inserting data:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, health_insurance, retirement_plan, employee_id } });
+    });
+});
+
+router.get('/benefits/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "SELECT * FROM benefits WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.put('/benefits/update/:id', (req, res) => {
+    const id = req.params.id;
+    const { health_insurance, retirement_plan, employee_id } = req.body;
+    if (!health_insurance ) {
+        return res.status(400).json({ Status: false, Error: "Health Insurance is required" });
+    }
+    if (!employee_id) {
+        return res.status(400).json({ Status: false, Error: "Associate employee is required" });
+    }
+
+    const sql = `UPDATE benefits
+        SET health_insurance = ?, retirement_plan = ?, employee_id = ?
+        WHERE id = ?`;
+    const values = [
+        health_insurance,
+        JSON.stringify(retirement_plan),
+        employee_id,
+        id
+    ];
+    con.query(sql, values, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.delete('/benefits/delete/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM benefits WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+// Route for Payrolls
+router.get('/payrolls', (req, res) => {
+    const sql = "SELECT * FROM payrolls";
+    con.query(sql, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.post('/payrolls/create', (req, res) => {
+    const { salary, deduction, employee_id } = req.body;
+    if (!salary ) {
+        return res.status(400).json({ Status: false, Error: "Salary is required" });
+    }
+    if (!deduction) {
+        return res.status(400).json({ Status: false, Error: "Deduction is required" });
+    }
+    if (!employee_id) {
+        return res.status(400).json({ Status: false, Error: "Associate employee is required" });
+    }
+    if (deduction > salary) {
+        return res.status(400).json({ Status: false, Error: "Deduction cannot be greater than salary." });
+    }
+
+    const net_pay = salary - deduction;
+
+    const sql = "INSERT INTO payrolls (salary, deduction, net_pay, employee_id) VALUES (?, ?, ?, ?)";
+    const values = [
+        salary,
+        deduction,
+        net_pay,
+        employee_id
+    ];
+    con.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("Error inserting data:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, salary, deduction, net_pay, employee_id } });
+    });
+});
+
+router.get('/payrolls/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "SELECT * FROM payrolls WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.put('/payrolls/update/:id', (req, res) => {
+    const id = req.params.id;
+    const { salary, deduction, employee_id } = req.body;
+    if (!salary ) {
+        return res.status(400).json({ Status: false, Error: "Salary is required" });
+    }
+    if (!deduction) {
+        return res.status(400).json({ Status: false, Error: "Deduction is required" });
+    }
+    if (!employee_id) {
+        return res.status(400).json({ Status: false, Error: "Associate employee is required" });
+    }
+    if (deduction > salary) {
+        return res.status(400).json({ Status: false, Error: "Deduction cannot be greater than salary." });
+    }
+
+    const net_pay = salary - deduction;
+    const sql = `UPDATE payrolls
+        SET salary = ?, deduction = ?, net_pay = ?, employee_id = ?
+        WHERE id = ?`;
+    const values = [
+        salary,
+        deduction,
+        net_pay,
+        employee_id,
+        id
+    ];
+    con.query(sql, values, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.delete('/payrolls/delete/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM payrolls WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+// Route for Time Trackings
+router.get('/time_trackings', (req, res) => {
+    const sql = "SELECT * FROM time_trackings";
+    con.query(sql, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.post('/time_trackings/create', (req, res) => {
+    const { date, time_in, time_out, employee_id } = req.body;
+    const checkInQuery = "SELECT * FROM time_trackings WHERE employee_id = ? AND date = ?";
+    con.query(checkInQuery, [employee_id, date], (checkInErr, checkInResult) => {
+        if (checkInErr) {
+            console.error("Error checking check-in status:", checkInErr);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        if (checkInResult.length > 0) {
+            return res.status(400).json({ Status: false, Error: "Employee has already checked in for this specific day." });
+        }
+        const timeIn = new Date('1970-01-01 ' + time_in);
+        const timeOut = new Date('1970-01-01 ' + time_out);
+        const diffMs = timeOut - timeIn;
+        const work_hour = diffMs / (1000 * 60 * 60);
+        const insertQuery = "INSERT INTO time_trackings (date, time_in, time_out, work_hour, employee_id) VALUES (?, ?, ?, ?, ?)";
+        const values = [
+            date,
+            time_in,
+            time_out,
+            work_hour,
+            employee_id
+        ];
+        con.query(insertQuery, values, (err, result) => {
+            if (err) {
+                console.error("Error inserting data:", err);
+                return res.status(500).json({ Status: false, Error: "Query Error" });
+            }
+            return res.status(201).json({ Status: true, Result: { id: result.insertId, date, time_in, time_out, work_hour, employee_id } });
+        });
+    });
+});
+
+
+router.get('/time_trackings/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "SELECT * FROM time_trackings WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.put('/time_trackings/update/:id', (req, res) => {
+    const id = req.params.id;
+    const { date, time_in, time_out, employee_id } = req.body;
+    const checkInQuery = "SELECT * FROM time_trackings WHERE employee_id = ? AND date = ?";
+    con.query(checkInQuery, [employee_id, date], (checkInErr, checkInResult) => {
+        if (checkInErr) {
+            console.error("Error checking check-in status:", checkInErr);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        if (checkInResult.length > 0 && checkInResult[0].id != id) {
+            return res.status(400).json({ Status: false, Error: "Employee has already checked in for this specific day." });
+        }
+        console.log("Existing record:", checkInResult);
+        const timeIn = new Date('1970-01-01 ' + time_in);
+        const timeOut = new Date('1970-01-01 ' + time_out);
+        const diffMs = timeOut - timeIn;
+        const work_hour = diffMs / (1000 * 60 * 60);
+        const updateQuery = `UPDATE time_trackings
+            SET date = ?, time_in = ?, time_out = ?, work_hour = ?, employee_id = ?
+            WHERE id = ?`;
+        const values = [
+            date,
+            time_in,
+            time_out,
+            work_hour,
+            employee_id,
+            id
+        ];
+        con.query(updateQuery, values, (err, result) => {
+            if (err) {
+                console.error("Error updating data:", err);
+                return res.status(500).json({ Status: false, Error: "Query Error" });
+            }
+            console.log("Update result:", result);
+            return res.status(200).json({ Status: true, Result: result });
+        });
+    });
+});
+
+router.delete('/time_trackings/delete/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM time_trackings WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+
+// route for admin count
 router.get('/admin_count', (req, res) => {
     const sql = "select count(id) as admin from admin";
     con.query(sql, (err, result) => {
@@ -143,12 +566,12 @@ router.get('/employee_count', (req, res) => {
 })
 
 router.get('/salary_count', (req, res) => {
-    const sql = "select sum(salary) as salaryOFEmp from employee";
+    const sql = "SELECT SUM(position.salary) AS totalSalary FROM employee JOIN position ON employee.position_id = position.id";
     con.query(sql, (err, result) => {
-        if(err) return res.json({Status: false, Error: "Query Error"+err})
-        return res.json({Status: true, Result: result})
-    })
-})
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
 
 router.get('/admin_records', (req, res) => {
     const sql = "select * from admin"
