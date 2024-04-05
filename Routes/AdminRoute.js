@@ -547,6 +547,117 @@ router.delete('/time_trackings/delete/:id', (req, res) => {
     });
 });
 
+// Route for Training Programs
+
+router.get('/training_programs', (req, res) => {
+    const sql = "SELECT * FROM training_program";
+    con.query(sql, (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.post('/training_programs/create', (req, res) => {
+    const { name, trainer, start_time, end_time } = req.body;
+    const insertQuery = "INSERT INTO training_program (name, trainer, start_time, end_time) VALUES (?, ?, ?, ?)";
+    const values = [
+        name,
+        trainer,
+        start_time,
+        end_time
+    ];
+    con.query(insertQuery, values, (err, result) => {
+        if (err) {
+            console.error("Error creating training program:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, name, trainer, start_time, end_time } });
+    });
+});
+
+router.get('/training_programs/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "SELECT * FROM training_program WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.put('/training_programs/update/:id', (req, res) => {
+    const id = req.params.id;
+    const { name, trainer, start_time, end_time } = req.body;
+    const updateQuery = `UPDATE training_program
+        SET name = ?, trainer = ?, start_time = ?, end_time = ?
+        WHERE id = ?`;
+    const values = [
+        name,
+        trainer,
+        start_time,
+        end_time,
+        id
+    ];
+    con.query(updateQuery, values, (err, result) => {
+        if (err) {
+            console.error("Error updating training program:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        return res.status(200).json({ Status: true, Result: result });
+    });
+});
+
+router.delete('/training_programs/delete/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = "DELETE FROM training_program WHERE id = ?";
+    con.query(sql, [id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+// Add employee to training program
+router.post('/training_programs/add_employee', (req, res) => {
+    const { employee_id, training_program_id } = req.body;
+    const checkQuery = "SELECT * FROM employee_training_program WHERE employee_id = ? AND training_program_id = ?";
+    const checkValues = [employee_id, training_program_id];
+    con.query(checkQuery, checkValues, (checkErr, checkResult) => {
+        if (checkErr) {
+            console.error("Error checking employee in training program:", checkErr);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        if (checkResult.length > 0) {
+            return res.status(400).json({ Status: false, Error: "Employee already exists in this training program" });
+        }
+
+        const insertQuery = "INSERT INTO employee_training_program (employee_id, training_program_id) VALUES (?, ?)";
+        const values = [employee_id, training_program_id];
+        con.query(insertQuery, values, (err, result) => {
+            if (err) {
+                console.error("Error adding employee to training program:", err);
+                return res.status(500).json({ Status: false, Error: "Query Error" });
+            }
+            return res.status(201).json({ Status: true, Result: { employee_id, training_program_id } });
+        });
+    });
+});
+
+router.get('/training_programs/:id/employees', (req, res) => {
+    const training_program_id = req.params.id;
+    const sql = "SELECT * FROM employees WHERE id IN (SELECT employee_id FROM employee_training_program WHERE training_program_id = ?)";
+    con.query(sql, [training_program_id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" });
+        return res.json({ Status: true, Result: result });
+    });
+});
+
+router.delete('/training_programs/remove_employee/:employee_id/:training_program_id', (req, res) => {
+    const { employee_id, training_program_id } = req.params;
+    const deleteQuery = "DELETE FROM employee_training_program WHERE employee_id = ? AND training_program_id = ?";
+    con.query(deleteQuery, [employee_id, training_program_id], (err, result) => {
+        if(err) return res.json({ Status: false, Error: "Query Error" + err });
+        return res.json({ Status: true, Result: result });
+    });
+});
 
 // route for admin count
 router.get('/admin_count', (req, res) => {
