@@ -19,7 +19,7 @@ router.post("/adminlogin", (req, res) => {
         { expiresIn: "1d" }
       );
       res.cookie('token', token)
-      return res.json({ loginStatus: true });
+      return res.json({ loginStatus: true, token: token});
     } else {
         return res.json({ loginStatus: false, Error:"wrong email or password" });
     }
@@ -73,7 +73,6 @@ router.put('/departments/update/:id', (req, res) => {
         return res.json({ Status: true, Result: result });
     });
 });
-
 
 router.delete('/departments/delete/:id', (req, res) => {
     const id = req.params.id;
@@ -161,7 +160,7 @@ router.get('/employees', (req, res) => {
 });
 
 router.post('/employees/create', (req, res) => {
-    const { name, email, password, address, department_id, position_id } = req.body;
+    const { name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days } = req.body;
     console.log(req.body)
     if (!name) {
         return res.status(400).json({ Status: false, Error: "Name field is required" });
@@ -178,23 +177,31 @@ router.post('/employees/create', (req, res) => {
     if (!position_id) {
         return res.status(400).json({ Status: false, Error: "Position field is required" });
     }
+    if (!annual_leave_days) {
+        return res.status(400).json({ Status: false, Error: "Annual leave day is required" });
+    }
+    if (!monthly_leave_days) {
+        return res.status(400).json({ Status: false, Error: "Monthly leave day is required" });
+    }
 
     bcrypt.hash(password, 10, (err, hash) => {
         if(err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
         const sql = `INSERT INTO employees
-            (name, email, password, address, department_id, position_id) 
-            VALUES (?, ?, ?, ?, ?, ?)`;
+            (name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
         const values = [
             name,
             email,
             hash,
             address,
             department_id,
-            position_id
+            position_id,
+            annual_leave_days,
+            monthly_leave_days
         ];
         con.query(sql, values, (err, result) => {
             if(err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
-            return res.status(201).json({ Status: true, Result: { id: result.insertId, name, email, address, department_id, position_id } });
+            return res.status(201).json({ Status: true, Result: { id: result.insertId, name, email, address, department_id, position_id, annual_leave_days, monthly_leave_days } });
         });
     });
 });
@@ -210,7 +217,7 @@ router.get('/employees/:id', (req, res) => {
 
 router.put('/employees/update/:id', (req, res) => {
     const id = req.params.id;
-    const { name, email, password, address, department_id, position_id } = req.body;
+    const { name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days } = req.body;
     if (!name) {
         return res.status(400).json({ Status: false, Error: "Name field is required" });
     }
@@ -226,6 +233,12 @@ router.put('/employees/update/:id', (req, res) => {
     if (!position_id) {
         return res.status(400).json({ Status: false, Error: "Position field is required" });
     }
+    if (!annual_leave_days) {
+        return res.status(400).json({ Status: false, Error: "Annual leave day is required" });
+    }
+    if (!monthly_leave_days) {
+        return res.status(400).json({ Status: false, Error: "Monthly leave day is required" });
+    }
 
     let sql;
     let values;
@@ -233,7 +246,7 @@ router.put('/employees/update/:id', (req, res) => {
         bcrypt.hash(password, 10, (err, hash) => {
             if(err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
             sql = `UPDATE employees
-                SET name = ?, email = ?, password = ?, address = ?, department_id = ?, position_id = ?
+                SET name = ?, email = ?, password = ?, address = ?, department_id = ?, position_id = ?, annual_leave_days = ?, monthly_leave_days = ?
                 WHERE id = ?`;
             values = [
                 name,
@@ -242,6 +255,8 @@ router.put('/employees/update/:id', (req, res) => {
                 address,
                 department_id,
                 position_id,
+                annual_leave_days,
+                monthly_leave_days,
                 id
             ];
             con.query(sql, values, (err, result) => {
@@ -251,7 +266,7 @@ router.put('/employees/update/:id', (req, res) => {
         });
     } else {
         sql = `UPDATE employees
-            SET name = ?, email = ?, address = ?, department_id = ?, position_id = ?
+            SET name = ?, email = ?, address = ?, department_id = ?, position_id = ?, annual_leave_days = ?, monthly_leave_days = ?
             WHERE id = ?`;
         values = [
             name,
@@ -259,6 +274,8 @@ router.put('/employees/update/:id', (req, res) => {
             address,
             department_id,
             position_id,
+            annual_leave_days,
+            monthly_leave_days,
             id
         ];
         con.query(sql, values, (err, result) => {
