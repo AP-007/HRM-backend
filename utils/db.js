@@ -1,19 +1,18 @@
 import mysql from 'mysql'
 
 const con = mysql.createConnection({
-    host: "localhost",
+    host: "127.0.0.1",
     user: "root",
-    password: "",
+    password: "password",
     database: "hrm_node"
 })
 
 con.connect(function(err) {
-    if(err) {
-        console.log("connection error")
+    if (err) {
+        console.log("Error connecting: " + err.stack)
     } else {
         console.log("Connected")
     }
 })
 
 export default con;
-
