@@ -9,7 +9,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 app.use(cookieParser())
-app.use('/auth', adminRouter)
+app.use('/admin', adminRouter)
 app.use('/employee', EmployeeRouter)
 app.use(express.static('Public'))
 
