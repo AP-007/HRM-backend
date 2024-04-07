@@ -9,12 +9,12 @@ const router = express.Router();
 
 router.post("/admin/login", (req, res) => {
     if (!req.body.email || !req.body.password) {
-        return res.status(400).json({ loginStatus: false, Error: "Email and password are required" });
+        return res.status(422).json({ loginStatus: false, Error: "Email and password are required" });
     }
 
     const emailRegex = /^\S+@\S+\.\S+$/;
     if (!emailRegex.test(req.body.email)) {
-        return res.status(400).json({ loginStatus: false, Error: "Please enter a valid email address" });
+        return res.status(422).json({ loginStatus: false, Error: "Please enter a valid email address" });
     }
 
     const sql = "SELECT id, name, email from admin Where email = ? and password = ?";
@@ -32,7 +32,7 @@ router.post("/admin/login", (req, res) => {
             res.cookie('token', token);
             return res.json({ loginStatus: true, token: token, user: user });
         } else {
-            return res.status(400).json({ loginStatus: false, Error: "Wrong email or password" });
+            return res.status(422).json({ loginStatus: false, Error: "Wrong email or password" });
         }
     });
 });
@@ -576,7 +576,6 @@ router.delete('/time_trackings/delete/:id', (req, res) => {
 });
 
 // Route for Training Programs
-
 router.get('/training_programs', (req, res) => {
     const sql = "SELECT * FROM training_program";
     con.query(sql, (err, result) => {
