@@ -29,7 +29,7 @@ router.post("/", (req, res) => {
             res.cookie('token', token);
             return res.json({ loginStatus: true, token: token, user: user });
         } else {
-            return res.status(422).json({ loginStatus: false, Error: "Wrong email or password" });
+            return res.status(400).json({ loginStatus: false, Error: "Wrong email or password" });
         }
     });
 });
