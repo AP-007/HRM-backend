@@ -1,8 +1,5 @@
 import express from "express";
 import con from "../utils/db.js";
-import jwt from "jsonwebtoken";
-import multer from "multer";
-import path from "path";
 import departmentRoutes from "./admin/departmentRoutes.js";
 import positionRoutes from "./admin/positionRoutes.js";
 import employeeRoutes from "./admin/employeeRoutes.js";
@@ -10,6 +7,7 @@ import benefitRoutes from "./admin/benefitRoutes.js";
 import payrollRoutes from "./admin/payrollRoutes.js";
 import timeTrackingRoutes from "./admin/timeTrackingRoutes.js";
 import trainingProgramRoutes from "./admin/trainingProgramRoutes.js";
+import leaveApprovalRoutes from "./admin/leaveApprovalRoutes.js";
 import loginRoutes from "./admin/loginRoutes.js";
 
 const router = express.Router();
@@ -22,6 +20,7 @@ router.use('/benefits', benefitRoutes);
 router.use('/payrolls', payrollRoutes);
 router.use('/time_trackings', timeTrackingRoutes);
 router.use('/training_programs', trainingProgramRoutes);
+router.use('/leave_approval', leaveApprovalRoutes);
 
 // route for admin count
 router.get('/admin_count', (req, res) => {
