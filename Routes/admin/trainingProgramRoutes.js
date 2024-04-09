@@ -134,15 +134,16 @@ router.post('/add_employees', (req, res) => {
 // load employee(s) from training program
 router.get('/:id/employees', (req, res) => {
     const training_program_id = req.params.id;
-    const sql = "SELECT * FROM employees WHERE id IN (SELECT employee_id FROM employee_training_program WHERE training_program_id = ?)";
+    const sql = "SELECT employee_id FROM employee_training_program WHERE training_program_id = ?";
     con.query(sql, [training_program_id], (err, result) => {
         if (err) return res.json({ Status: false, Error: "Query Error" });
-        return res.json({ Status: true, Result: result });
+        const employeeIds = result.map(row => row.employee_id);
+        return res.json({ Status: true, EmployeeIds: employeeIds });
     });
 });
 
 // remove employee(s) from training program
-router.delete('/training_programs/remove_employee/:training_program_id', (req, res) => {
+router.delete('/remove_employee/:training_program_id', (req, res) => {
     const { training_program_id } = req.params;
     const { employee_ids } = req.body;
     if (!employee_ids || !Array.isArray(employee_ids) || employee_ids.length === 0) {

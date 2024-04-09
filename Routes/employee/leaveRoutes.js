@@ -13,30 +13,46 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { is_monthly_leave, is_annual_leave, reason, status } = req.body;
+    const { employee_id, is_monthly_leave, is_annual_leave, reason } = req.body;
     if (!(is_monthly_leave === 1 && is_annual_leave === 0) && !(is_monthly_leave === 0 && is_annual_leave === 1)) {
-        return res.status(400).json({ Status: false, Error: "Invalid combination of monthly and annual leaves" });
+        return res.status(400).json({ Status: false, Error: "Either monthly or annual leave should be enabled." });
     }
     if (!reason) {
-        return res.status(400).json({ Status: false, Error: "Reason is required" });
+        return res.status(400).json({ Status: false, Error: "Reason is required." });
     }
-    if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
-        return res.status(400).json({ Status: false, Error: "Invalid status" });
-    }
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const date = `${year}-${month}-${day}`;
 
-    const sql = "INSERT INTO leaves (is_monthly_leave, is_annual_leave, reason, status) VALUES (?, ?, ?, ?)";
-    const values = [
-        is_monthly_leave,
-        is_annual_leave,
-        reason,
-        status
-    ];
-    con.query(sql, values, (err, result) => {
-        if (err) {
-            console.error("Error inserting data:", err);
+    const checkExistingQuery = "SELECT * FROM leaves WHERE employee_id = ? AND date = ?";
+    const checkExistingValues = [employee_id, date];
+    con.query(checkExistingQuery, checkExistingValues, (checkErr, checkResult) => {
+        if (checkErr) {
+            console.error("Error checking existing data:", checkErr);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         }
-        return res.status(201).json({ Status: true, Result: { id: result.insertId, is_monthly_leave, is_annual_leave, reason, status } });
+        if (checkResult.length > 0) {
+            return res.status(400).json({ Status: false, Error: "You already have applied for leave today." });
+        }
+        const status = "pending";
+        const insertQuery = "INSERT INTO leaves (employee_id, is_monthly_leave, is_annual_leave, reason, status, date) VALUES (?, ?, ?, ?, ?, ?)";
+        const insertValues = [
+            employee_id,
+            is_monthly_leave,
+            is_annual_leave,
+            reason,
+            status,
+            date
+        ];
+        con.query(insertQuery, insertValues, (insertErr, result) => {
+            if (insertErr) {
+                console.error("Error inserting data:", insertErr);
+                return res.status(500).json({ Status: false, Error: "Query Error" });
+            }
+            return res.status(201).json({ Status: true, Result: { id: result.insertId, employee_id, is_monthly_leave, is_annual_leave, reason, status, date } });
+        });
     });
 });
 
@@ -54,9 +70,10 @@ router.get('/:id', (req, res) => {
 
 router.put('/update/:id', (req, res) => {
     const id = req.params.id;
-    const { is_monthly_leave, is_annual_leave, reason, status } = req.body;
+    const { is_monthly_leave, is_annual_leave, reason } = req.body;
+    const status = "pending";
     if (!(is_monthly_leave === 1 && is_annual_leave === 0) && !(is_monthly_leave === 0 && is_annual_leave === 1)) {
-        return res.status(400).json({ Status: false, Error: "Invalid combination of monthly and annual leaves" });
+        return res.status(400).json({ Status: false, Error: "Either monthly or annual leave should enabled." });
     }
     if (!reason) {
         return res.status(400).json({ Status: false, Error: "Reason is required" });
