@@ -60,7 +60,7 @@ router.post('/create', (req, res) => {
 
 router.get('/:id', (req, res) => {
     const id = req.params.id;
-    const sql = "SELECT * FROM employees WHERE id = ?";
+    const sql = "SELECT id, name, email, address, department_id, position_id, monthly_leave_days, annual_leave_days FROM employees WHERE id = ?";
     con.query(sql, [id], (err, result) => {
         if (err) return res.status(500).json({ Status: false, Error: "Query Error" });
         if (result.length === 0) {
