@@ -5,25 +5,28 @@ const router = express.Router();
 
 // Route for Payroll
 router.get('/', (req, res) => {
-    const sql = "SELECT p.id, p.deduction, p.salary, e.monthly_leave_days FROM payrolls p JOIN employees e ON p.employee_id = e.id";
+    const sql = "SELECT p.id, p.deduction, p.salary, p.employee_id, e.monthly_leave_days FROM payrolls p JOIN employees e ON p.employee_id = e.id";
     con.query(sql, (err, result) => {
         if (err) {
             console.error("Error fetching payrolls:", err);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         }
-        const payrollsWithMonthlyLeaveDays = result.map(payroll => {
+        const payrollsWithDetails = result.map(payroll => {
             const deduction = payroll.deduction;
             const salary = payroll.salary;
             const allocated_leave_days = payroll.monthly_leave_days;
             const monthly_leave_days = (deduction / (salary / 25)) + allocated_leave_days;
+            const net_pay = salary - deduction;
             return {
                 id: payroll.id,
                 salary: salary,
-                monthly_leave_days: monthly_leave_days,
-                deduction: deduction
+                deduction: deduction,
+                net_pay: net_pay,
+                employee_id: payroll.employee_id,
+                monthly_leave_days: monthly_leave_days
             };
         });
-        return res.json({ Status: true, Result: payrollsWithMonthlyLeaveDays });
+        return res.json({ Status: true, Result: payrollsWithDetails });
     });
 });
 
