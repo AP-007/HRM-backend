@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Route for Employees
 router.get('/', (req, res) => {
-    const sql = "SELECT * FROM employees";
+    const sql = "SELECT id, name, email, address, department_id, position_id, monthly_leave_days, annual_leave_days FROM employees";
     con.query(sql, (err, result) => {
         if (err) return res.status(500).json({ Status: false, Error: "Query Error" });
         return res.status(200).json({ Status: true, Result: result });
