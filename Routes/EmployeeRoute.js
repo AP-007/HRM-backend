@@ -12,14 +12,43 @@ router.use('/leaves', leaveRoutes);
 
 router.get('/detail/:id', (req, res) => {
   const id = req.params.id;
-  const sql = "SELECT * FROM employee where id = ?"
+  const sql = `
+    SELECT employees.*, department.name AS department_name
+    FROM employees
+    INNER JOIN department ON employees.department_id = department.id
+    WHERE employees.id = ?
+  `;
   con.query(sql, [id], (err, result) => {
-      if(err) return res.json({Status: false});
-      return res.json(result)
-  })
-})
+    if (err) {
+      console.error("Error executing SQL query:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+    return res.json(result[0]);
+  });
+});
 
-// Function to check in an employee
+
+
+router.get('/time_sheets/:id', (req, res) => {
+  const employeeId = req.params.id;
+  const sql = `
+    SELECT * 
+    FROM time_trackings 
+    WHERE employee_id = ?
+  `;
+  con.query(sql, [employeeId], (err, result) => {
+    if (err) {
+      console.error("Error executing SQL query:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    return res.json(result);
+  });
+});
+
+
 router.post('/check_in', (req, res) => {
   const { employee_id } = req.body;
   const currentDate = new Date().toISOString().split('T')[0];

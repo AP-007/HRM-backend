@@ -4,7 +4,7 @@ import con from "../../utils/db.js";
 const router = express.Router();
 
 router.post("/", (req, res) => {
-    const sql = "SELECT * from employee Where email = ?";
+    const sql = "SELECT * from employees Where email = ?";
     con.query(sql, [req.body.email], (err, result) => {
         if (err) return res.json({ loginStatus: false, Error: "Query error" });
         if (result.length > 0) {
