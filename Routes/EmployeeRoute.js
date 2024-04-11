@@ -13,10 +13,9 @@ router.use('/leaves', leaveRoutes);
 router.get('/detail/:id', (req, res) => {
   const id = req.params.id;
   const sql = `
-    SELECT employees.*, department.name AS department_name
+    SELECT id , name, email, address, monthly_leave_days 
     FROM employees
-    INNER JOIN department ON employees.department_id = department.id
-    WHERE employees.id = ?
+    WHERE id = ?
   `;
   con.query(sql, [id], (err, result) => {
     if (err) {
