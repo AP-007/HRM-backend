@@ -4,13 +4,32 @@ import con from "../../utils/db.js";
 const router = express.Router();
 
 // Route for Department
+// Route for Department
 router.get('/', (req, res) => {
-    const sql = "SELECT * FROM department";
+    const sql = `
+        SELECT dep.*, COUNT(emp.id) AS employeeCount, GROUP_CONCAT(CONCAT_WS('|', emp.id, emp.name, emp.email, emp.salary) SEPARATOR ';') AS employees
+        FROM department dep
+        LEFT JOIN employees emp ON dep.id = emp.department_id
+        GROUP BY dep.id`;
+
     con.query(sql, (err, result) => {
-        if (err) return res.json({ Status: false, Error: "Query Error" })
-        return res.json({ Status: true, Result: result })
-    })
-})
+        if (err) return res.json({ Status: false, Error: "Query Error" });
+        const departmentData = result.map(department => {
+            const { id, name, employeeCount, employees } = department;
+            return {
+                id,
+                name,
+                employeeCount,
+                employees: employees ? employees.split(';').map(employee => {
+                    const [id, name, email, salary] = employee.split('|');
+                    return { id, name, email, salary: parseFloat(salary) };
+                }) : []
+            };
+        });
+        return res.json({ Status: true, Result: departmentData });
+    });
+});
+
 
 router.post('/create', (req, res) => {
     const { name } = req.body;
