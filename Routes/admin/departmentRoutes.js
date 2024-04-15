@@ -75,7 +75,7 @@ router.delete('/delete/:id', (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(422).json({ Status: false, Error: "Department ID not found" });
         }
-        return res.json({ Status: true, Result: result })
+        return res.json({ Status: true, Result: "Department deleted successfully." })
     })
 })
 

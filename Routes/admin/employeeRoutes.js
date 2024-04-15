@@ -14,33 +14,48 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days } = req.body;
+    const { name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days, bank_name, bank_account_number } = req.body;
+    const errors = [];
     if (!name) {
-        return res.status(422).json({ Status: false, Error: "Name field is required" });
+        errors.push("Name field is required");
     }
     if (!email) {
-        return res.status(422).json({ Status: false, Error: "Email field is required" });
+        errors.push("Email field is required");
     }
     if (!address) {
-        return res.status(422).json({ Status: false, Error: "Address field is required" });
+        errors.push("Address field is required");
     }
     if (!department_id) {
-        return res.status(422).json({ Status: false, Error: "Department field is required" });
+        errors.push("Department field is required");
     }
     if (!position_id) {
-        return res.status(422).json({ Status: false, Error: "Position field is required" });
+        errors.push("Position field is required");
     }
     if (!annual_leave_days) {
-        return res.status(422).json({ Status: false, Error: "Annual leave day is required" });
+        errors.push("Annual leave day is required");
     }
     if (!monthly_leave_days) {
-        return res.status(422).json({ Status: false, Error: "Monthly leave day is required" });
+        errors.push("Monthly leave day is required");
     }
+    if (!bank_name) {
+        errors.push("Bank name is required");
+    }
+    if (!bank_account_number) {
+        errors.push("Bank account number is required");
+    }
+
+    if (errors.length > 0) {
+        return res.status(422).json({ Status: false, Errors: errors });
+    }
+
     bcrypt.hash(password, 10, (err, hash) => {
-        if (err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
+        if (err) {
+            return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
+        }
+
         const sql = `INSERT INTO employees
-            (name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+            (name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days, bank_name, bank_account_number) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const values = [
             name,
             email,
@@ -49,10 +64,14 @@ router.post('/create', (req, res) => {
             department_id,
             position_id,
             annual_leave_days,
-            monthly_leave_days
+            monthly_leave_days,
+            bank_name, 
+            bank_account_number
         ];
         con.query(sql, values, (err, result) => {
-            if (err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+            if (err) {
+                return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+            }
             return res.status(201).json({ Status: true, Result: { id: result.insertId, name, email, address, department_id, position_id, annual_leave_days, monthly_leave_days } });
         });
     });
@@ -73,27 +92,37 @@ router.get('/:id', (req, res) => {
 
 router.put('/update/:id', (req, res) => {
     const id = req.params.id;
-    const { name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days } = req.body;
+    const { name, email, password, address, department_id, position_id, annual_leave_days, monthly_leave_days, bank_name, bank_account_number } = req.body;
+    const errors = [];
     if (!name) {
-        return res.status(422).json({ Status: false, Error: "Name field is required" });
+        errors.push("Name field is required");
     }
     if (!email) {
-        return res.status(422).json({ Status: false, Error: "Email field is required" });
+        errors.push("Email field is required");
     }
     if (!address) {
-        return res.status(422).json({ Status: false, Error: "Address field is required" });
+        errors.push("Address field is required");
     }
     if (!department_id) {
-        return res.status(422).json({ Status: false, Error: "Department field is required" });
+        errors.push("Department field is required");
     }
     if (!position_id) {
-        return res.status(422).json({ Status: false, Error: "Position field is required" });
+        errors.push("Position field is required");
     }
     if (!annual_leave_days) {
-        return res.status(422).json({ Status: false, Error: "Annual leave day is required" });
+        errors.push("Annual leave day is required");
     }
     if (!monthly_leave_days) {
-        return res.status(422).json({ Status: false, Error: "Monthly leave day is required" });
+        errors.push("Monthly leave day is required");
+    }
+    if (!bank_name) {
+        errors.push("Bank name is required");
+    }
+    if (!bank_account_number) {
+        errors.push("Bank account number is required");
+    }
+    if (errors.length > 0) {
+        return res.status(422).json({ Status: false, Errors: errors });
     }
 
     let sql;
@@ -102,7 +131,7 @@ router.put('/update/:id', (req, res) => {
         bcrypt.hash(password, 10, (err, hash) => {
             if (err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
             sql = `UPDATE employees
-                SET name = ?, email = ?, password = ?, address = ?, department_id = ?, position_id = ?, annual_leave_days = ?, monthly_leave_days = ?
+                SET name = ?, email = ?, password = ?, address = ?, department_id = ?, position_id = ?, annual_leave_days = ?, monthly_leave_days = ?, bank_name = ?, bank_account_number = ?
                 WHERE id = ?`;
             values = [
                 name,
@@ -113,6 +142,8 @@ router.put('/update/:id', (req, res) => {
                 position_id,
                 annual_leave_days,
                 monthly_leave_days,
+                bank_name,
+                bank_account_number,
                 id
             ];
             con.query(sql, values, (err, result) => {
@@ -120,7 +151,7 @@ router.put('/update/:id', (req, res) => {
                 if (result.affectedRows === 0) {
                     return res.status(422).json({ Status: false, Error: "Employee not found" });
                 }
-                return res.status(200).json({ Status: true, Result: result });
+                return res.status(200).json({ Status: true, Result: "Employee updated successfully." });
             });
         });
     } else {

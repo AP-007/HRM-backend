@@ -13,22 +13,32 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { title, salary, responsibilities } = req.body;
+    const { title, salary, responsibilities, department_id } = req.body;
+    const errors = [];
+
     if (!title) {
-        return res.status(422).json({ Status: false, Error: "Title field is required" });
+        errors.push("Title field is required");
     }
     if (!salary) {
-        return res.status(422).json({ Status: false, Error: "Salary field is required" });
+        errors.push("Salary field is required");
     }
     if (!responsibilities) {
-        return res.status(422).json({ Status: false, Error: "Responsibilities field is required" });
+        errors.push("Responsibilities field is required");
     }
-    const sql = "INSERT INTO `position` (title, salary, responsibilities) VALUES (?, ?, ?)";
+    if (!department_id) {
+        errors.push("Department field is required");
+    }
+    if (errors.length > 0) {
+        return res.status(422).json({ Status: false, Errors: errors });
+    }
+
+    const sql = "INSERT INTO `position` (title, salary, responsibilities, department_id) VALUES (?, ?, ?, ?)";
     const responsibilitiesJson = JSON.stringify(responsibilities)
     const values = [
         title,
         salary,
-        responsibilitiesJson
+        responsibilitiesJson,
+        department_id
     ];
     con.query(sql, values, (err, result) => {
         if (err) {
@@ -53,36 +63,45 @@ router.get('/:id', (req, res) => {
 
 router.put('/update/:id', (req, res) => {
     const id = req.params.id;
-    const { title, salary, responsibilities } = req.body;
-    if (!id) {
-        return res.status(422).json({ Status: false, Error: "Position ID is missing" });
-    }
+    const { title, salary, responsibilities, department_id } = req.body;
+    const errors = [];
     if (!title) {
-        return res.status(422).json({ Status: false, Error: "Title field is required" });
+        errors.push("Title field is required");
     }
     if (!salary) {
-        return res.status(422).json({ Status: false, Error: "Salary field is required" });
+        errors.push("Salary field is required");
     }
     if (!responsibilities) {
-        return res.status(422).json({ Status: false, Error: "Responsibilities field is required" });
+        errors.push("Responsibilities field is required");
+    }
+    if (!department_id) {
+        errors.push("Department field is required");
+    }
+    if (errors.length > 0) {
+        return res.status(422).json({ Status: false, Errors: errors });
     }
     const sql = `UPDATE position
-        SET title = ?, salary = ?, responsibilities = ?
+        SET title = ?, salary = ?, responsibilities = ?, department_id = ?
         WHERE id = ?`;
     const values = [
         title,
         salary,
         JSON.stringify(responsibilities),
+        department_id,
         id
     ];
     con.query(sql, values, (err, result) => {
-        if (err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        if (err) {
+            return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        }
         if (result.affectedRows === 0) {
             return res.status(422).json({ Status: false, Error: "Position ID not found" });
         }
         const updatedSql = "SELECT * FROM position WHERE id = ?";
         con.query(updatedSql, [id], (err, updatedResult) => {
-            if (err) return res.status(500).json({ Status: false, Error: "Query Error" + err });
+            if (err) {
+                return res.status(500).json({ Status: false, Error: "Query Error" + err });
+            }
             const updatedPosition = updatedResult[0];
             return res.status(200).json({ Status: true, Position: updatedPosition });
         });
