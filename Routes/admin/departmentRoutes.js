@@ -11,7 +11,6 @@ router.get('/', (req, res) => {
         FROM department dep
         LEFT JOIN employees emp ON dep.id = emp.department_id
         GROUP BY dep.id`;
-
     con.query(sql, (err, result) => {
         if (err) return res.json({ Status: false, Error: "Query Error" });
         const departmentData = result.map(department => {
@@ -29,7 +28,6 @@ router.get('/', (req, res) => {
         return res.json({ Status: true, Result: departmentData });
     });
 });
-
 
 router.post('/create', (req, res) => {
     const { name } = req.body;

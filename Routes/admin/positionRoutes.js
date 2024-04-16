@@ -13,14 +13,17 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { title, salary, responsibilities, department_id } = req.body;
+    const { title, min_salary, max_salary, responsibilities, department_id } = req.body;
     const errors = [];
 
     if (!title) {
         errors.push("Title field is required");
     }
-    if (!salary) {
-        errors.push("Salary field is required");
+    if (!min_salary) {
+        errors.push("Minimum Salary field is required");
+    }
+    if (!max_salary) {
+        errors.push("Maximum Salary field is required");
     }
     if (!responsibilities) {
         errors.push("Responsibilities field is required");
@@ -32,11 +35,12 @@ router.post('/create', (req, res) => {
         return res.status(422).json({ Status: false, Errors: errors });
     }
 
-    const sql = "INSERT INTO `position` (title, salary, responsibilities, department_id) VALUES (?, ?, ?, ?)";
+    const sql = "INSERT INTO `position` (title, min_salary, max_salary, responsibilities, department_id) VALUES (?, ?, ?, ?, ?)";
     const responsibilitiesJson = JSON.stringify(responsibilities)
     const values = [
         title,
-        salary,
+        min_salary,
+        max_salary,
         responsibilitiesJson,
         department_id
     ];
@@ -45,7 +49,7 @@ router.post('/create', (req, res) => {
             console.error("Error inserting data:", err);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         }
-        return res.status(201).json({ Status: true, Result: { id: result.insertId, title, salary, responsibilities } });
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, title, min_salary, max_salary, responsibilities } });
     });
 });
 
@@ -63,13 +67,16 @@ router.get('/:id', (req, res) => {
 
 router.put('/update/:id', (req, res) => {
     const id = req.params.id;
-    const { title, salary, responsibilities, department_id } = req.body;
+    const { title, min_salary, max_salary, responsibilities, department_id } = req.body;
     const errors = [];
     if (!title) {
         errors.push("Title field is required");
     }
-    if (!salary) {
-        errors.push("Salary field is required");
+    if (!min_salary) {
+        errors.push("Minimum Salary field is required");
+    }
+    if (!max_salary) {
+        errors.push("Maximum Salary field is required");
     }
     if (!responsibilities) {
         errors.push("Responsibilities field is required");
@@ -81,11 +88,12 @@ router.put('/update/:id', (req, res) => {
         return res.status(422).json({ Status: false, Errors: errors });
     }
     const sql = `UPDATE position
-        SET title = ?, salary = ?, responsibilities = ?, department_id = ?
+        SET title = ?, min_salary = ?, max_salary = ?, responsibilities = ?, department_id = ?
         WHERE id = ?`;
     const values = [
         title,
-        salary,
+        min_salary,
+        max_salary,
         JSON.stringify(responsibilities),
         department_id,
         id
