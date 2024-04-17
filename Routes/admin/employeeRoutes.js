@@ -17,15 +17,17 @@ router.get('/', (req, res) => {
 router.post('/search', (req, res) => {
     const { query } = req.body;
     if (!query) {
-        return res.status(422).json({ Status: false, Error: "Search query parameter is required" });
+        return res.status(422).json({ Status: false, Error: "No result found" });
     }
-    console.log("hi")
     const sql = "SELECT * FROM employees WHERE (name) LIKE ? OR (email) LIKE ?";
     const searchTerm = `%${query}%`;
     console.log(searchTerm)
     con.query(sql, [searchTerm, searchTerm], (err, result) => {
         if (err) {
             return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        }
+        if (result.length == 0) {
+            return res.status(200).json({ Status: true, Error: "No result found" });
         }
         return res.status(200).json({ Status: true, Result: result });
     });

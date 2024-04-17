@@ -54,8 +54,9 @@ router.post('/create', (req, res) => {
         }
         const timeIn = new Date('1970-01-01 ' + time_in);
         const work_hour = 0;
-        const insertQuery = "INSERT INTO time_trackings (date, time_in, work_hour, employee_id) VALUES (?, ?, ?, ?)";
-        const values = [date, time_in, work_hour, employee_id];
+        const time_out = null;
+        const insertQuery = "INSERT INTO time_trackings (date, time_in, time_out, work_hour, employee_id) VALUES (?, ?, ?, ?, ?)";
+        const values = [date, time_in, time_out, work_hour, employee_id];
         
         con.query(insertQuery, values, (err, result) => {
             if (err) {
