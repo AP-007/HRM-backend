@@ -9,6 +9,7 @@ import timeTrackingRoutes from "./admin/timeTrackingRoutes.js";
 import trainingProgramRoutes from "./admin/trainingProgramRoutes.js";
 import leaveApprovalRoutes from "./admin/leaveApprovalRoutes.js";
 import loginRoutes from "./admin/loginRoutes.js";
+import dashboardRoutes from "./admin/dashboardRoutes.js";
 
 const router = express.Router();
 
@@ -21,39 +22,7 @@ router.use('/payrolls', payrollRoutes);
 router.use('/time_trackings', timeTrackingRoutes);
 router.use('/training_programs', trainingProgramRoutes);
 router.use('/leave_approval', leaveApprovalRoutes);
-
-// route for admin count
-router.get('/admin_count', (req, res) => {
-    const sql = "select count(id) as admin from admin";
-    con.query(sql, (err, result) => {
-        if (err) return res.json({ Status: false, Error: "Query Error" + err })
-        return res.json({ Status: true, Result: result })
-    })
-})
-
-router.get('/employee_count', (req, res) => {
-    const sql = "select count(id) as employee from employee";
-    con.query(sql, (err, result) => {
-        if (err) return res.json({ Status: false, Error: "Query Error" + err })
-        return res.json({ Status: true, Result: result })
-    })
-})
-
-router.get('/salary_count', (req, res) => {
-    const sql = "SELECT SUM(position.salary) AS totalSalary FROM employee JOIN position ON employee.position_id = position.id";
-    con.query(sql, (err, result) => {
-        if (err) return res.json({ Status: false, Error: "Query Error" + err });
-        return res.json({ Status: true, Result: result });
-    });
-});
-
-router.get('/admin_records', (req, res) => {
-    const sql = "select * from admin"
-    con.query(sql, (err, result) => {
-        if (err) return res.json({ Status: false, Error: "Query Error" + err })
-        return res.json({ Status: true, Result: result })
-    })
-})
+router.use('/dashboard', dashboardRoutes);
 
 router.get('/logout', (req, res) => {
     res.clearCookie('token')

@@ -145,10 +145,6 @@ router.put('/update/:payroll_id', (req, res) => {
             console.error("Error checking payments:", err);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         } else {
-            if (rows.length === 0) {
-                return res.status(404).json({ Status: false, Error: "Payroll record not found for the provided ID" });
-            }
-
             if (monthly_used_leave) {
                 fetchMonthlyLeaveAllocation(employee_id)
                     .then(monthlyLeaveAllocation => {

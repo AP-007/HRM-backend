@@ -106,27 +106,22 @@ router.delete('/delete/:id', (req, res) => {
 router.post('/add_employees', (req, res) => {
     const { employee_ids, training_program_id } = req.body;
     if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
-        return res.status(422).json({ Status: false, Error: "You haven't selected employee for this training program." });
+        return res.status(422).json({ Status: false, Error: "You haven't selected employees for this training program." });
     }
-    const checkQuery = "SELECT * FROM employee_training_program WHERE training_program_id = ?";
-    con.query(checkQuery, [training_program_id], (checkErr, checkResult) => {
-        if (checkErr) {
-            console.error("Error checking employees in training program:", checkErr);
+    const deleteQuery = "DELETE FROM employee_training_program WHERE training_program_id = ?";
+    con.query(deleteQuery, [training_program_id], (deleteErr, deleteResult) => {
+        if (deleteErr) {
+            console.error("Error removing existing employees from training program:", deleteErr);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         }
-        const existingEmployeeIds = checkResult.map(entry => entry.employee_id);
-        const newEmployeeIds = employee_ids.filter(id => !existingEmployeeIds.includes(id));
-        if (newEmployeeIds.length === 0) {
-            return res.status(400).json({ Status: false, Error: "All employees are already added to this training program" });
-        }
         const insertQuery = "INSERT INTO employee_training_program (employee_id, training_program_id) VALUES ?";
-        const values = newEmployeeIds.map(id => [id, training_program_id]);
-        con.query(insertQuery, [values], (err, result) => {
-            if (err) {
-                console.error("Error adding employees to training program:", err);
+        const values = employee_ids.map(id => [id, training_program_id]);
+        con.query(insertQuery, [values], (insertErr, insertResult) => {
+            if (insertErr) {
+                console.error("Error adding employees to training program:", insertErr);
                 return res.status(500).json({ Status: false, Error: "Query Error" });
             }
-            return res.status(201).json({ Status: true, Result: { employee_ids: newEmployeeIds, training_program_id } });
+            return res.status(201).json({ Status: true, Result: { employee_ids, training_program_id } });
         });
     });
 });
