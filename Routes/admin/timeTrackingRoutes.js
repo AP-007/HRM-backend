@@ -31,14 +31,27 @@ router.get('/today_attendance', (req, res) => {
     });
 });
 
+router.put('/checkout/:id', (req, res) => {
+    const id = req.params.id;
+    if (!id) {
+        return res.status(422).json({ Status: false, Error: "Please send time tracking id." });
+    }
+    const checkInQuery = "SELECT * FROM time_trackings WHERE id = ?";
+    con.query(checkInQuery, [id], (checkInErr, checkInResult) => {
+
+    });
+});
 
 router.post('/create', (req, res) => {
-    const { date, time_in, employee_id } = req.body;
+    const { date, time_in, time_out, employee_id } = req.body;
     if (!date) {
         return res.status(422).json({ status: false, error: "Date field is required" });
     }
     if (!time_in) {
         return res.status(422).json({ status: false, error: "CheckIn field is required" });
+    }
+    if (!time_out) {
+        return res.status(422).json({ status: false, error: "CheckOut field is required" });
     }
     if (!employee_id) {
         return res.status(422).json({ status: false, error: "Employee Field is required." });
@@ -50,14 +63,15 @@ router.post('/create', (req, res) => {
             return res.status(500).json({ status: false, error: "Query Error" });
         }
         if (checkInResult.length > 0) {
-            return res.status(422).json({ status: false, error: "Employee has already checked in for this specific day." });
+            return res.status(422).json({ status: false, error: "This employee has already checked in for this specific day." });
         }
         const timeIn = new Date('1970-01-01 ' + time_in);
-        const work_hour = 0;
-        const time_out = null;
+        const timeOut = new Date('1970-01-01 ' + time_out);
+        const diffMs = timeOut - timeIn;
+        const work_hour = diffMs / (1000 * 60 * 60);
+
         const insertQuery = "INSERT INTO time_trackings (date, time_in, time_out, work_hour, employee_id) VALUES (?, ?, ?, ?, ?)";
         const values = [date, time_in, time_out, work_hour, employee_id];
-        
         con.query(insertQuery, values, (err, result) => {
             if (err) {
                 console.error("Error inserting data:", err);
