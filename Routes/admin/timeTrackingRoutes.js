@@ -12,6 +12,19 @@ router.get('/', (req, res) => {
     });
 });
 
+// Assuming you have initialized 'router' and 'con' properly
+router.get('/employees/:id', (req, res) => {
+    const employee_id = req.params.id;
+    const sql = "SELECT * FROM time_trackings WHERE employee_id = ? ORDER BY date DESC";
+    con.query(sql, [employee_id], (err, rows) => {
+        if (err) {
+            console.error("Error fetching time trackings:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        return res.status(200).json({ Status: true, Result: rows });
+    });
+});
+
 // Today employee attandance
 router.get('/today_attendance', (req, res) => {
     const today_date = new Date().toISOString().slice(0, 10);
