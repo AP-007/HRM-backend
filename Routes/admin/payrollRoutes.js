@@ -55,6 +55,7 @@ router.post('/pay_now', (req, res) => {
                     console.error("Error fetching monthly leave days:", err);
                     return res.status(500).json({ Status: false, Error: "Query Error" });
                 }
+
                 const monthlyLeaveDays = employeeResult[0].monthly_leave_days;
                 const salary = employeeResult[0].salary;
                 let deductionAmount = 0;

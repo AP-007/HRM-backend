@@ -13,39 +13,51 @@ router.get('/', (req, res) => {
     });
 });
 
-// Employee all data
-router.get('/data/:id', (req, res) => {
-    const employeeId = req.params.id;
-
-    const sql = `
-        SELECT 
-            e.*,
-            b.*, 
-            l.*, 
-            n.*, 
-            p.*, 
-            t.*
-        FROM employees AS e
-        LEFT JOIN benefits AS b ON e.id = b.employee_id
-        LEFT JOIN leaves AS l ON e.id = l.employee_id
-        LEFT JOIN notifications AS n ON e.id = n.employee_id
-        LEFT JOIN payrolls AS p ON e.id = p.employee_id
-        LEFT JOIN time_trackings AS t ON e.id = t.employee_id
-        WHERE e.id = ?
-    `;
-
-    con.query(sql, [employeeId], (err, result) => {
+function fetchFromDatabase(sql, con, params) {
+    con.query(sql, params, (err, result) => {
         if (err) {
             console.error('Error fetching employee data:', err);
             return res.status(500).json({ Status: false, Error: "Query Error: " + err });
         }
-        
+
+        return result;
+    });
+}
+
+// Employee all data
+router.get('/data/:id', (req, res) => {
+    const employeeId = req.params.id;
+
+    const employeeSql = "SELECT * FROM employees WHERE id = ?";
+    const data = {}
+    con.query(employeeSql, [employeeId], (err, result) => {
+        if (err) {
+            console.error('Error fetching employee data:', err);
+            return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        }
+        console.log("Employee Data", result[0]);
         if (result.length === 0) {
             return res.status(404).json({ Status: false, Error: "Employee not found" });
         }
+        const benefits = "SELECT * FROM benefits WHERE employee_id = ?";
+        data.benefits = fetchFromDatabase(benefits, con, [employeeId]);
 
-        return res.status(200).json({ Status: true, Result: result });
+        const leaves = "SELECT * FROM leaves WHERE employee_id = ?";
+        data.leaves = fetchFromDatabase(leaves, con, [employeeId]);
+
+        const payrolls = "SELECT * FROM payrolls WHERE employee_id = ?";
+        data.payrolls = fetchFromDatabase(payrolls, con, [employeeId]);
+
+        const timeTrackings = "SELECT * FROM time_trackings WHERE employee_id = ?";
+        data.timeTrackings = fetchFromDatabase(timeTrackings, con, [employeeId]);
+        console.log(data);
+
+        return res.status(200).json({ Status: true, Result: data });
+
+
     });
+
+
 });
 
 
@@ -121,7 +133,7 @@ router.post('/create', (req, res) => {
             position_id,
             salary,
             monthly_leave_days,
-            bank_name, 
+            bank_name,
             bank_account_number
         ];
         con.query(sql, values, (err, result) => {
