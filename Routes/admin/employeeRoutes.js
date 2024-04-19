@@ -69,6 +69,8 @@ router.get('/data/:id', (req, res) => {
             });
         });
     });
+
+
 });
 
 // for search functionality
@@ -143,7 +145,7 @@ router.post('/create', (req, res) => {
             position_id,
             salary,
             monthly_leave_days,
-            bank_name, 
+            bank_name,
             bank_account_number
         ];
         con.query(sql, values, (err, result) => {
