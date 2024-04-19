@@ -7,7 +7,7 @@ const router = express.Router();
 // Route for Department
 router.get('/', (req, res) => {
     const sql = `
-        SELECT dep.*, COUNT(emp.id) AS employeeCount, GROUP_CONCAT(CONCAT_WS('|', emp.id, emp.name, emp.email, emp.salary) SEPARATOR ';') AS employees
+        SELECT dep.*, COUNT(emp.id) AS employeeCount, GROUP_CONCAT(CONCAT_WS('|', emp.id, emp.name, emp.email, emp.salary, emp.position_id) SEPARATOR ';') AS employees
         FROM department dep
         LEFT JOIN employees emp ON dep.id = emp.department_id
         GROUP BY dep.id`;
@@ -20,8 +20,8 @@ router.get('/', (req, res) => {
                 name,
                 employeeCount,
                 employees: employees ? employees.split(';').map(employee => {
-                    const [id, name, email, salary] = employee.split('|');
-                    return { id, name, email, salary: parseFloat(salary) };
+                    const [id, name, email, salary, position_id] = employee.split('|');
+                    return { id, name, email, position_id, salary: parseFloat(salary) };
                 }) : []
             };
         });
