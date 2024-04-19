@@ -13,10 +13,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { employee_id, is_monthly_leave, is_annual_leave, reason } = req.body;
-    if (!(is_monthly_leave === 1 && is_annual_leave === 0) && !(is_monthly_leave === 0 && is_annual_leave === 1)) {
-        return res.status(400).json({ Status: false, Error: "Either monthly or annual leave should be enabled." });
-    }
+    const { employee_id, reason } = req.body;
     if (!reason) {
         return res.status(400).json({ Status: false, Error: "Reason is required." });
     }
@@ -37,11 +34,9 @@ router.post('/create', (req, res) => {
             return res.status(400).json({ Status: false, Error: "You already have applied for leave today." });
         }
         const status = "pending";
-        const insertQuery = "INSERT INTO leaves (employee_id, is_monthly_leave, is_annual_leave, reason, status, date) VALUES (?, ?, ?, ?, ?, ?)";
+        const insertQuery = "INSERT INTO leaves (employee_id, reason, status, date) VALUES (?, ?, ?, ?)";
         const insertValues = [
             employee_id,
-            is_monthly_leave,
-            is_annual_leave,
             reason,
             status,
             date
@@ -51,7 +46,31 @@ router.post('/create', (req, res) => {
                 console.error("Error inserting data:", insertErr);
                 return res.status(500).json({ Status: false, Error: "Query Error" });
             }
-            return res.status(201).json({ Status: true, Result: { id: result.insertId, employee_id, is_monthly_leave, is_annual_leave, reason, status, date } });
+            const employeeQuery = "SELECT name FROM employees WHERE id = ?";
+            con.query(employeeQuery, [employee_id], (nameErr, nameResult) => {
+                if (nameErr || nameResult.length === 0) {
+                    console.error("Error fetching employee name:", nameErr);
+                    return res.status(500).json({ Status: false, Error: "Failed to fetch employee name" });
+                }
+                const employee_name = nameResult[0].name;
+                const title = "Leave Request";
+                const message = `${employee_name} requested for leave.`;
+                const adminId = 1;
+                const notificationInsertQuery = "INSERT INTO notifications (title, message, type, date, admin_id) VALUES (?, ?, ?, ?, ?)";
+                const notificationValues = [
+                    title,
+                    message,
+                    'leave_request',
+                    date,
+                    adminId
+                ];
+                con.query(notificationInsertQuery, notificationValues, (notificationErr, notificationResult) => {
+                    if (notificationErr) {
+                        console.error("Error inserting notification:", notificationErr);
+                    }
+                });
+                return res.status(201).json({ Status: true, Result: { id: result.insertId, employee_id, reason, status, date } });
+            });
         });
     });
 });

@@ -13,8 +13,12 @@ router.get('/', (req, res) => {
 
 router.put('/approve/:id', (req, res) => {
     const leave_id = req.params.id;
+    const { employee_id } = req.body;
     if (!leave_id) {
         return res.status(422).json({ Status: false, Error: "Leave ID is missing" });
+    }
+    if (!employee_id) {
+        return res.status(422).json({ Status: false, Error: "Employee ID is missing" });
     }
     const status = "approved";
     const sql = `UPDATE leaves
@@ -29,14 +33,34 @@ router.put('/approve/:id', (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(422).json({ Status: false, Error: "Leave ID not found" });
         }
+        
+        const title = "Leave Approved";
+        const message = `Your leave request has been approved.`;
+        const notificationInsertQuery = "INSERT INTO notifications (title, message, type, date, employee_id) VALUES (?, ?, ?, ?, ?)";
+        const notificationValues = [
+            title,
+            message,
+            'leave_approval',
+            new Date(),
+            employee_id
+        ];
+        con.query(notificationInsertQuery, notificationValues, (notificationErr, notificationResult) => {
+            if (notificationErr) {
+                console.error("Error inserting notification:", notificationErr);
+            }
+        });
         return res.status(200).json({ Status: true, Result: "Leave approved successfully." });
     });
 });
 
 router.put('/reject/:id', (req, res) => {
     const leave_id = req.params.id;
+    const { employee_id } = req.body;
     if (!leave_id) {
         return res.status(422).json({ Status: false, Error: "Leave ID is missing" });
+    }
+    if (!employee_id) {
+        return res.status(422).json({ Status: false, Error: "Employee ID is missing" });
     }
     const status = "rejected";
     const sql = `UPDATE leaves
@@ -51,6 +75,21 @@ router.put('/reject/:id', (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(422).json({ Status: false, Error: "Leave ID not found" });
         }
+        const title = "Leave Rejected";
+        const message = `Your leave request has been rejected.`;
+        const notificationInsertQuery = "INSERT INTO notifications (title, message, type, date, employee_id) VALUES (?, ?, ?, ?, ?)";
+        const notificationValues = [
+            title,
+            message,
+            'leave_rejection',
+            new Date(),
+            employee_id
+        ];
+        con.query(notificationInsertQuery, notificationValues, (notificationErr, notificationResult) => {
+            if (notificationErr) {
+                console.error("Error inserting notification:", notificationErr);
+            }
+        });
         return res.status(200).json({ Status: true, Result: "Leave rejected successfully." });
     });
 });
