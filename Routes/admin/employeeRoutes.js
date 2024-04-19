@@ -13,41 +13,63 @@ router.get('/', (req, res) => {
     });
 });
 
-// Employee all data
 router.get('/data/:id', (req, res) => {
     const employeeId = req.params.id;
-
-    const sql = `
-        SELECT 
-            e.*,
-            b.*, 
-            l.*, 
-            n.*, 
-            p.*, 
-            t.*
-        FROM employees AS e
-        LEFT JOIN benefits AS b ON e.id = b.employee_id
-        LEFT JOIN leaves AS l ON e.id = l.employee_id
-        LEFT JOIN notifications AS n ON e.id = n.employee_id
-        LEFT JOIN payrolls AS p ON e.id = p.employee_id
-        LEFT JOIN time_trackings AS t ON e.id = t.employee_id
-        WHERE e.id = ?
-    `;
-
-    con.query(sql, [employeeId], (err, result) => {
-        if (err) {
-            console.error('Error fetching employee data:', err);
-            return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+    const employeeQuery = "SELECT * FROM employees WHERE id = ?";
+    con.query(employeeQuery, [employeeId], (employeeErr, employeeResult) => {
+        if (employeeErr) {
+            console.error('Error fetching employee data:', employeeErr);
+            return res.status(500).json({ Status: false, Error: "Query Error: " + employeeErr });
         }
-        
-        if (result.length === 0) {
+        if (employeeResult.length === 0) {
             return res.status(404).json({ Status: false, Error: "Employee not found" });
         }
-
-        return res.status(200).json({ Status: true, Result: result });
+        const benefitsQuery = "SELECT * FROM benefits WHERE employee_id = ?";
+        con.query(benefitsQuery, [employeeId], (benefitsErr, benefitsResult) => {
+            if (benefitsErr) {
+                console.error('Error fetching benefits data:', benefitsErr);
+                return res.status(500).json({ Status: false, Error: "Query Error: " + benefitsErr });
+            }
+            const leavesQuery = "SELECT * FROM leaves WHERE employee_id = ?";
+            con.query(leavesQuery, [employeeId], (leavesErr, leavesResult) => {
+                if (leavesErr) {
+                    console.error('Error fetching leaves data:', leavesErr);
+                    return res.status(500).json({ Status: false, Error: "Query Error: " + leavesErr });
+                }
+                const notificationsQuery = "SELECT * FROM notifications WHERE employee_id = ?";
+                con.query(notificationsQuery, [employeeId], (notificationsErr, notificationsResult) => {
+                    if (notificationsErr) {
+                        console.error('Error fetching notifications data:', notificationsErr);
+                        return res.status(500).json({ Status: false, Error: "Query Error: " + notificationsErr });
+                    }
+                    const payrollsQuery = "SELECT * FROM payrolls WHERE employee_id = ?";
+                    con.query(payrollsQuery, [employeeId], (payrollsErr, payrollsResult) => {
+                        if (payrollsErr) {
+                            console.error('Error fetching payrolls data:', payrollsErr);
+                            return res.status(500).json({ Status: false, Error: "Query Error: " + payrollsErr });
+                        }
+                        const timeTrackingsQuery = "SELECT * FROM time_trackings WHERE employee_id = ?";
+                        con.query(timeTrackingsQuery, [employeeId], (timeTrackingsErr, timeTrackingsResult) => {
+                            if (timeTrackingsErr) {
+                                console.error('Error fetching time trackings data:', timeTrackingsErr);
+                                return res.status(500).json({ Status: false, Error: "Query Error: " + timeTrackingsErr });
+                            }
+                            const data = {
+                                employee: employeeResult[0],
+                                benefits: benefitsResult,
+                                leaves: leavesResult,
+                                notifications: notificationsResult,
+                                payrolls: payrollsResult,
+                                time_trackings: timeTrackingsResult
+                            };
+                            return res.status(200).json({ Status: true, Result: data });
+                        });
+                    });
+                });
+            });
+        });
     });
 });
-
 
 // for search functionality
 router.post('/search', (req, res) => {

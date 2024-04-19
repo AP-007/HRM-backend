@@ -13,33 +13,35 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { employee_id, reason } = req.body;
+    const { employee_id, reason, from, to } = req.body;
     if (!reason) {
         return res.status(400).json({ Status: false, Error: "Reason is required." });
     }
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const date = `${year}-${month}-${day}`;
+    if (!from) {
+        return res.status(400).json({ Status: false, Error: "Initial day is required." });
+    }
+    if (!to) {
+        return res.status(400).json({ Status: false, Error: "Final day is required." });
+    }
 
-    const checkExistingQuery = "SELECT * FROM leaves WHERE employee_id = ? AND date = ?";
-    const checkExistingValues = [employee_id, date];
+    const checkExistingQuery = "SELECT * FROM leaves WHERE employee_id = ? AND ((`from` BETWEEN ? AND ?) OR (`to` BETWEEN ? AND ?))";
+    const checkExistingValues = [employee_id, from, to, from, to];
     con.query(checkExistingQuery, checkExistingValues, (checkErr, checkResult) => {
         if (checkErr) {
             console.error("Error checking existing data:", checkErr);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         }
         if (checkResult.length > 0) {
-            return res.status(400).json({ Status: false, Error: "You already have applied for leave today." });
+            return res.status(400).json({ Status: false, Error: "You already have applied for leave within this period." });
         }
         const status = "pending";
-        const insertQuery = "INSERT INTO leaves (employee_id, reason, status, date) VALUES (?, ?, ?, ?)";
+        const insertQuery = "INSERT INTO leaves (employee_id, reason, status, `from`, `to`) VALUES (?, ?, ?, ?, ?)";
         const insertValues = [
             employee_id,
             reason,
             status,
-            date
+            from,
+            to
         ];
         con.query(insertQuery, insertValues, (insertErr, result) => {
             if (insertErr) {
@@ -54,14 +56,14 @@ router.post('/create', (req, res) => {
                 }
                 const employee_name = nameResult[0].name;
                 const title = "Leave Request";
-                const message = `${employee_name} requested for leave.`;
+                const message = `${employee_name} requested for leave from ${from} to ${to}.`;
                 const adminId = 1;
-                const notificationInsertQuery = "INSERT INTO notifications (title, message, type, date, admin_id) VALUES (?, ?, ?, ?, ?)";
+                const notificationInsertQuery = "INSERT INTO notifications (title, message, type, `date`, admin_id) VALUES (?, ?, ?, ?, ?)";
                 const notificationValues = [
                     title,
                     message,
                     'leave_request',
-                    date,
+                    new Date(),
                     adminId
                 ];
                 con.query(notificationInsertQuery, notificationValues, (notificationErr, notificationResult) => {
@@ -69,7 +71,7 @@ router.post('/create', (req, res) => {
                         console.error("Error inserting notification:", notificationErr);
                     }
                 });
-                return res.status(201).json({ Status: true, Result: { id: result.insertId, employee_id, reason, status, date } });
+                return res.status(201).json({ Status: true, Result: { id: result.insertId, employee_id, reason, status, from, to } });
             });
         });
     });
@@ -88,35 +90,31 @@ router.get('/:id', (req, res) => {
 });
 
 router.put('/update/:id', (req, res) => {
-    const id = req.params.id;
-    const { is_monthly_leave, is_annual_leave, reason } = req.body;
-    const status = "pending";
-    if (!(is_monthly_leave === 1 && is_annual_leave === 0) && !(is_monthly_leave === 0 && is_annual_leave === 1)) {
-        return res.status(400).json({ Status: false, Error: "Either monthly or annual leave should enabled." });
-    }
+    const leaveId = req.params.id;
+    const { reason, from, to } = req.body;
     if (!reason) {
-        return res.status(400).json({ Status: false, Error: "Reason is required" });
+        return res.status(400).json({ Status: false, Error: "Reason is required." });
     }
-    if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
-        return res.status(400).json({ Status: false, Error: "Invalid status" });
+    if (!from) {
+        return res.status(400).json({ Status: false, Error: "From date is required." });
     }
+    if (!to) {
+        return res.status(400).json({ Status: false, Error: "To date is required." });
+    }
+    const updateQuery = "UPDATE leaves SET reason = ?, `from` = ?, `to` = ? WHERE id = ?";
+    const updateValues = [reason, from, to, leaveId];
 
-    const sql = `UPDATE leaves
-        SET is_monthly_leave = ?, is_annual_leave = ?, reason = ?, status = ?
-        WHERE id = ?`;
-    const values = [
-        is_monthly_leave,
-        is_annual_leave,
-        reason,
-        status,
-        id
-    ];
-    con.query(sql, values, (err, result) => {
-        if (err) return res.json({ Status: false, Error: "Query Error" + err });
-        if (result.affectedRows === 0) {
-            return res.status(422).json({ Status: false, Error: "Leave ID not found" });
+    con.query(updateQuery, updateValues, (updateErr, updateResult) => {
+        if (updateErr) {
+            console.error("Error updating leave:", updateErr);
+            return res.status(500).json({ Status: false, Error: "Failed to update leave." });
         }
-        return res.json({ Status: true, Result: "Leave updated successfully." });
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(404).json({ Status: false, Error: "Leave not found." });
+        }
+
+        return res.status(200).json({ Status: true, Message: "Leave updated successfully." });
     });
 });
 
