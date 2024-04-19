@@ -4,11 +4,13 @@ import jwt from "jsonwebtoken";
 import bcrypt from 'bcrypt'
 import leaveRoutes from "./employee/leaveRoutes.js";
 import loginRoutes from "./employee/loginRoutes.js";
+import notificationRoutes from "./employee/notificationRoutes.js";
 
 const router = express.Router()
 
 router.use('/login', loginRoutes);
 router.use('/leaves', leaveRoutes);
+router.use('/notifications', notificationRoutes);
 
 router.get('/detail/:id', (req, res) => {
   const id = req.params.id;

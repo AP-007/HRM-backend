@@ -10,6 +10,7 @@ import trainingProgramRoutes from "./admin/trainingProgramRoutes.js";
 import leaveApprovalRoutes from "./admin/leaveApprovalRoutes.js";
 import loginRoutes from "./admin/loginRoutes.js";
 import dashboardRoutes from "./admin/dashboardRoutes.js";
+import notificationRoutes from "./admin/notificationRoutes.js";
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.use('/time_trackings', timeTrackingRoutes);
 router.use('/training_programs', trainingProgramRoutes);
 router.use('/leave_approval', leaveApprovalRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/notifications', notificationRoutes);
 
 router.get('/logout', (req, res) => {
     res.clearCookie('token')

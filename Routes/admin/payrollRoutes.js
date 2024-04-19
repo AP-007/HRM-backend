@@ -30,6 +30,8 @@ router.get('/', (req, res) => {
     });
 });
 
+
+
 router.post('/create', (req, res) => {
     const { salary, monthly_used_leave, employee_id } = req.body;
     let deduction = 0;
