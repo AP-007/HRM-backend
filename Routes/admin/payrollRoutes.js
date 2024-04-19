@@ -30,6 +30,51 @@ router.get('/', (req, res) => {
     });
 });
 
+router.post('/pay_now', (req, res) => {
+    const { employee_id } = req.body;
+    const currentDate = new Date().toISOString().slice(0, 10);
+    const checkExistingPayrollQuery = "SELECT * FROM payrolls WHERE employee_id = ? AND pay_date = ?";
+    con.query(checkExistingPayrollQuery, [employee_id, currentDate], (err, existingPayrollResult) => {
+        if (err) {
+            console.error("Error checking existing payroll:", err);
+            return res.status(500).json({ Status: false, Error: "Query Error" });
+        }
+        if (existingPayrollResult.length > 0) {
+            return res.status(422).json({ Status: false, Error: "Employee has already been paid today." });
+        }
+        const approvedLeaveCountQuery = "SELECT COUNT(*) AS approved_count FROM leaves WHERE status = 'approved' AND employee_id = ?";
+        con.query(approvedLeaveCountQuery, [employee_id], (err, leaveResult) => {
+            if (err) {
+                console.error("Error fetching approved leave count:", err);
+                return res.status(500).json({ Status: false, Error: "Query Error" });
+            }
+            const approvedLeaveCount = leaveResult[0].approved_count;
+            const monthlyLeaveDaysQuery = "SELECT monthly_leave_days, salary FROM employees WHERE id = ?";
+            con.query(monthlyLeaveDaysQuery, [employee_id], (err, employeeResult) => {
+                if (err) {
+                    console.error("Error fetching monthly leave days:", err);
+                    return res.status(500).json({ Status: false, Error: "Query Error" });
+                }
+                const monthlyLeaveDays = employeeResult[0].monthly_leave_days;
+                const salary = employeeResult[0].salary;
+                let deductionAmount = 0;
+                if (monthlyLeaveDays < approvedLeaveCount) {
+                    const deductedDays = approvedLeaveCount - monthlyLeaveDays;
+                    deductionAmount = (salary / 25) * deductedDays;
+                }
+                const updatePayrollQuery = "INSERT INTO payrolls (salary, deduction, net_pay, pay_date, employee_id) VALUES (?, ?, ?, ?, ?)";
+                const values = [salary, deductionAmount, salary - deductionAmount, currentDate, employee_id];
+                con.query(updatePayrollQuery, values, (err, payrollResult) => {
+                    if (err) {
+                        console.error("Error updating payroll data:", err);
+                        return res.status(500).json({ Status: false, Error: "Query Error" });
+                    }
+                    return res.status(200).json({ Status: true, Result: "Payment processed successfully." });
+                });
+            });
+        });
+    });
+});
 
 
 router.post('/create', (req, res) => {
