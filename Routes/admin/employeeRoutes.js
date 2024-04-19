@@ -13,6 +13,42 @@ router.get('/', (req, res) => {
     });
 });
 
+// Employee all data
+router.get('/data/:id', (req, res) => {
+    const employeeId = req.params.id;
+
+    const sql = `
+        SELECT 
+            e.*,
+            b.*, 
+            l.*, 
+            n.*, 
+            p.*, 
+            t.*
+        FROM employees AS e
+        LEFT JOIN benefits AS b ON e.id = b.employee_id
+        LEFT JOIN leaves AS l ON e.id = l.employee_id
+        LEFT JOIN notifications AS n ON e.id = n.employee_id
+        LEFT JOIN payrolls AS p ON e.id = p.employee_id
+        LEFT JOIN time_trackings AS t ON e.id = t.employee_id
+        WHERE e.id = ?
+    `;
+
+    con.query(sql, [employeeId], (err, result) => {
+        if (err) {
+            console.error('Error fetching employee data:', err);
+            return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        }
+        
+        if (result.length === 0) {
+            return res.status(404).json({ Status: false, Error: "Employee not found" });
+        }
+
+        return res.status(200).json({ Status: true, Result: result });
+    });
+});
+
+
 // for search functionality
 router.post('/search', (req, res) => {
     const { query } = req.body;
