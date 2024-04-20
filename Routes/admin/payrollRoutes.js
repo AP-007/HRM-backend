@@ -70,7 +70,14 @@ router.post('/pay_now', (req, res) => {
                         console.error("Error updating payroll data:", err);
                         return res.status(500).json({ Status: false, Error: "Query Error" });
                     }
-                    return res.status(200).json({ Status: true, Result: "Payment processed successfully." });
+                    const updateEmployeeQuery = "UPDATE employees SET last_pay_date = ? WHERE id = ?";
+                    con.query(updateEmployeeQuery, [currentDate, employee_id], (err, updateEmployeeResult) => {
+                        if (err) {
+                            console.error("Error updating employee record:", err);
+                            return res.status(500).json({ Status: false, Error: "Query Error" });
+                        }
+                        return res.status(200).json({ Status: true, Result: "Payment processed successfully." });
+                    });
                 });
             });
         });
