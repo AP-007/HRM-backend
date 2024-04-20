@@ -25,21 +25,24 @@ router.post('/create', (req, res) => {
     if (!end_time) {
         return res.status(422).json({ Status: false, Error: "End time is required." });
     }
+    const formattedStartTime = new Date(start_time).toISOString().slice(0, 19).replace('T', ' ');
+    const formattedEndTime = new Date(end_time).toISOString().slice(0, 19).replace('T', ' ');
     const insertQuery = "INSERT INTO training_program (name, trainer, start_time, end_time) VALUES (?, ?, ?, ?)";
     const values = [
         name,
         trainer,
-        start_time,
-        end_time
+        formattedStartTime,
+        formattedEndTime
     ];
     con.query(insertQuery, values, (err, result) => {
         if (err) {
             console.error("Error creating training program:", err);
             return res.status(500).json({ Status: false, Error: "Query Error" });
         }
-        return res.status(201).json({ Status: true, Result: { id: result.insertId, name, trainer, start_time, end_time } });
+        return res.status(201).json({ Status: true, Result: { id: result.insertId, name, trainer, start_time: formattedStartTime, end_time: formattedEndTime } });
     });
 });
+
 
 router.get('/:id', (req, res) => {
     const id = req.params.id;
@@ -68,14 +71,16 @@ router.put('/update/:id', (req, res) => {
     if (!end_time) {
         return res.status(422).json({ Status: false, Error: "End time is required." });
     }
+    const formattedStartTime = new Date(start_time).toISOString().slice(0, 19).replace('T', ' ');
+    const formattedEndTime = new Date(end_time).toISOString().slice(0, 19).replace('T', ' ');
     const updateQuery = `UPDATE training_program
         SET name = ?, trainer = ?, start_time = ?, end_time = ?
         WHERE id = ?`;
     const values = [
         name,
         trainer,
-        start_time,
-        end_time,
+        formattedStartTime,
+        formattedEndTime,
         id
     ];
     con.query(updateQuery, values, (err, result) => {
@@ -104,24 +109,36 @@ router.delete('/delete/:id', (req, res) => {
 
 // add employee(s) to training program
 router.post('/add_employees', (req, res) => {
-    const { employee_ids, training_program_id } = req.body;
-    const deleteQuery = "DELETE FROM employee_training_program WHERE training_program_id = ?";
-    con.query(deleteQuery, [training_program_id], (deleteErr, deleteResult) => {
-        if (deleteErr) {
-            console.error("Error removing existing employees from training program:", deleteErr);
-            return res.status(500).json({ Status: false, Error: "Query Error" });
-        }
-        const insertQuery = "INSERT INTO employee_training_program (employee_id, training_program_id) VALUES ?";
-        const values = employee_ids.map(id => [id, training_program_id]);
-        con.query(insertQuery, [values], (insertErr, insertResult) => {
-            if (insertErr) {
-                console.error("Error adding employees to training program:", insertErr);
+    const { employee_ids = [], training_program_id } = req.body;
+    if (employee_ids.length === 0) {
+        const deleteQuery = "DELETE FROM employee_training_program WHERE training_program_id = ?";
+        con.query(deleteQuery, [training_program_id], (deleteErr, deleteResult) => {
+            if (deleteErr) {
+                console.error("Error removing existing employees from training program:", deleteErr);
                 return res.status(500).json({ Status: false, Error: "Query Error" });
             }
-            return res.status(201).json({ Status: true, Result: { employee_ids, training_program_id } });
+            return res.status(201).json({ Status: true, Result: { message: "Employee removed successfully." } });
         });
-    });
+    } else {
+        const deleteQuery = "DELETE FROM employee_training_program WHERE training_program_id = ?";
+        con.query(deleteQuery, [training_program_id], (deleteErr, deleteResult) => {
+            if (deleteErr) {
+                console.error("Error removing existing employees from training program:", deleteErr);
+                return res.status(500).json({ Status: false, Error: "Query Error" });
+            }
+            const insertQuery = "INSERT INTO employee_training_program (employee_id, training_program_id) VALUES ?";
+            const values = employee_ids.map(id => [id, training_program_id]);
+            con.query(insertQuery, [values], (insertErr, insertResult) => {
+                if (insertErr) {
+                    console.error("Error adding employees to training program:", insertErr);
+                    return res.status(500).json({ Status: false, Error: "Query Error" });
+                }
+                return res.status(201).json({ Status: true, Result: { employee_ids, training_program_id } });
+            });
+        });
+    }
 });
+
 
 // load employee(s) from training program
 router.get('/:id/employees', (req, res) => {

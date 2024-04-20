@@ -54,23 +54,29 @@ router.get('/data/:id', (req, res) => {
                                 console.error('Error fetching time trackings data:', timeTrackingsErr);
                                 return res.status(500).json({ Status: false, Error: "Query Error: " + timeTrackingsErr });
                             }
-                            const data = {
-                                employee: employeeResult[0],
-                                benefits: benefitsResult,
-                                leaves: leavesResult,
-                                notifications: notificationsResult,
-                                payrolls: payrollsResult,
-                                time_trackings: timeTrackingsResult
-                            };
-                            return res.status(200).json({ Status: true, Result: data });
+                            const trainingProgramsQuery = "SELECT training_program.* FROM training_program INNER JOIN employee_training_program ON training_program.id = employee_training_program.training_program_id WHERE employee_training_program.employee_id = ?";
+                            con.query(trainingProgramsQuery, [employeeId], (trainingProgramsErr, trainingProgramsResult) => {
+                                if (trainingProgramsErr) {
+                                    console.error('Error fetching training programs data:', trainingProgramsErr);
+                                    return res.status(500).json({ Status: false, Error: "Query Error: " + trainingProgramsErr });
+                                }
+                                const data = {
+                                    employee: employeeResult[0],
+                                    benefits: benefitsResult,
+                                    leaves: leavesResult,
+                                    notifications: notificationsResult,
+                                    payrolls: payrollsResult,
+                                    time_trackings: timeTrackingsResult,
+                                    training_programs: trainingProgramsResult
+                                };
+                                return res.status(200).json({ Status: true, Result: data });
+                            });
                         });
                     });
                 });
             });
         });
     });
-
-
 });
 
 // for search functionality
@@ -111,9 +117,6 @@ router.post('/create', (req, res) => {
     if (!position_id) {
         errors.push("Position field is required");
     }
-    if (!monthly_leave_days) {
-        errors.push("Monthly leave day is required");
-    }
     if (!bank_name) {
         errors.push("Bank name is required");
     }
@@ -128,34 +131,44 @@ router.post('/create', (req, res) => {
         return res.status(422).json({ Status: false, Errors: errors });
     }
 
-    bcrypt.hash(password, 10, (err, hash) => {
+    const checkQuery = `SELECT * FROM employees WHERE email = ?`;
+    con.query(checkQuery, [email], (err, rows) => {
         if (err) {
-            return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
+            return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        }
+        if (rows.length > 0) {
+            return res.status(409).json({ Status: false, Error: "Employee with this email already exists" });
         }
 
-        const sql = `INSERT INTO employees
-            (name, email, password, address, department_id, position_id, salary,  monthly_leave_days, bank_name, bank_account_number) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const values = [
-            name,
-            email,
-            hash,
-            address,
-            department_id,
-            position_id,
-            salary,
-            monthly_leave_days,
-            bank_name,
-            bank_account_number
-        ];
-        con.query(sql, values, (err, result) => {
+        bcrypt.hash(password, 10, (err, hash) => {
             if (err) {
-                return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+                return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
             }
-            return res.status(201).json({ Status: true, Result: { id: result.insertId, name, email, address, department_id, position_id, salary, monthly_leave_days } });
+            const insertQuery = `INSERT INTO employees
+                (name, email, password, address, department_id, position_id, salary,  monthly_leave_days, bank_name, bank_account_number) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const values = [
+                name,
+                email,
+                hash,
+                address,
+                department_id,
+                position_id,
+                salary,
+                monthly_leave_days,
+                bank_name,
+                bank_account_number
+            ];
+            con.query(insertQuery, values, (err, result) => {
+                if (err) {
+                    return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+                }
+                return res.status(201).json({ Status: true, Result: { id: result.insertId, name, email, address, department_id, position_id, salary, monthly_leave_days } });
+            });
         });
     });
 });
+
 
 router.get('/:id', (req, res) => {
     const id = req.params.id;
@@ -191,9 +204,6 @@ router.put('/update/:id', (req, res) => {
     }
     if (!salary) {
         errors.push("Salary field is required");
-    }
-    if (!monthly_leave_days) {
-        errors.push("Monthly leave day is required");
     }
     if (!bank_name) {
         errors.push("Bank name is required");
