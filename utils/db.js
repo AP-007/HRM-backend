@@ -4,7 +4,7 @@ const con = mysql.createConnection({
     host: "127.0.0.1",
     user: "root",
     password: "",
-    database: "hrm_node"
+    database: "hrm_node_2"
 })
 
 con.connect(function(err) {

@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
                 if (err) throw err;
                 const departmentCount = results[0].departmentCount;
                 const today = new Date().toISOString().slice(0, 10);
-                con.query("SELECT emp.name, emp.email, lv.reason FROM employees emp JOIN leaves lv ON emp.id = lv.employee_id WHERE lv.date = ? AND lv.status = ?", [today, 'approved'], (err, results) => {
+                con.query("SELECT emp.name, emp.email, lv.reason FROM employees emp JOIN leaves lv ON emp.id = lv.employee_id WHERE ? BETWEEN lv.from AND lv.to AND lv.status = ?", [today, 'approved'], (err, results) => {
                     if (err) throw err;
                     const employeesOnLeave = results;
                     const adminDashboardData = {
