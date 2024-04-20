@@ -105,9 +105,6 @@ router.delete('/delete/:id', (req, res) => {
 // add employee(s) to training program
 router.post('/add_employees', (req, res) => {
     const { employee_ids, training_program_id } = req.body;
-    if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
-        return res.status(422).json({ Status: false, Error: "You haven't selected employees for this training program." });
-    }
     const deleteQuery = "DELETE FROM employee_training_program WHERE training_program_id = ?";
     con.query(deleteQuery, [training_program_id], (deleteErr, deleteResult) => {
         if (deleteErr) {
