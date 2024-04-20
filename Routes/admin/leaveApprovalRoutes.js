@@ -4,8 +4,8 @@ import con from "../../utils/db.js";
 const router = express.Router();
 
 router.get('/', (req, res) => {
-    const sql = "SELECT leaves.*, employees.* FROM leaves INNER JOIN employees ON leaves.employee_id = employees.id WHERE leaves.status = ?";
-    con.query(sql, ["pending"] , (err, result) => {
+    const sql = "SELECT leaves.*, employees.name, employees.email, employees.address, employees.salary FROM leaves INNER JOIN employees ON leaves.employee_id = employees.id WHERE leaves.status = ?";
+    con.query(sql, ["pending"], (err, result) => {
         if (err) {
             console.error("Error fetching leaves data:", err);
             return res.status(500).json({ Status: false, Error: "Query Error" });
