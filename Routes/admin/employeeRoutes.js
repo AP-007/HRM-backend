@@ -185,7 +185,7 @@ router.get('/:id', (req, res) => {
 
 router.put('/update/:id', (req, res) => {
     const id = req.params.id;
-    const { name, email, password, address, department_id, position_id, salary, monthly_leave_days, bank_name, bank_account_number } = req.body;
+    const { name, email, address, department_id, position_id, salary, monthly_leave_days, bank_name, bank_account_number } = req.body;
     const errors = [];
     if (!name) {
         errors.push("Name field is required");
@@ -217,55 +217,26 @@ router.put('/update/:id', (req, res) => {
 
     let sql;
     let values;
-    if (password) {
-        bcrypt.hash(password, 10, (err, hash) => {
-            if (err) return res.status(500).json({ Status: false, Error: "Hashing Error: " + err });
-            sql = `UPDATE employees
-                SET name = ?, email = ?, password = ?, address = ?, department_id = ?, position_id = ?, salary = ?, monthly_leave_days = ?, bank_name = ?, bank_account_number = ?
-                WHERE id = ?`;
-            values = [
-                name,
-                email,
-                hash,
-                address,
-                department_id,
-                position_id,
-                salary,
-                monthly_leave_days,
-                bank_name,
-                bank_account_number,
-                id
-            ];
-            con.query(sql, values, (err, result) => {
-                if (err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
-                if (result.affectedRows === 0) {
-                    return res.status(422).json({ Status: false, Error: "Employee not found" });
-                }
-                return res.status(200).json({ Status: true, Result: "Employee updated successfully." });
-            });
-        });
-    } else {
-        sql = `UPDATE employees
-            SET name = ?, email = ?, address = ?, department_id = ?, position_id = ?, salary = ?, monthly_leave_days = ?
-            WHERE id = ?`;
-        values = [
-            name,
-            email,
-            address,
-            department_id,
-            position_id,
-            salary,
-            monthly_leave_days,
-            id
-        ];
-        con.query(sql, values, (err, result) => {
-            if (err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
-            if (result.affectedRows === 0) {
-                return res.status(422).json({ Status: false, Error: "Employee not found" });
-            }
-            return res.status(200).json({ Status: true, Result: result });
-        });
-    }
+    sql = `UPDATE employees
+        SET name = ?, email = ?, address = ?, department_id = ?, position_id = ?, salary = ?, monthly_leave_days = ?
+        WHERE id = ?`;
+    values = [
+        name,
+        email,
+        address,
+        department_id,
+        position_id,
+        salary,
+        monthly_leave_days,
+        id
+    ];
+    con.query(sql, values, (err, result) => {
+        if (err) return res.status(500).json({ Status: false, Error: "Query Error: " + err });
+        if (result.affectedRows === 0) {
+            return res.status(422).json({ Status: false, Error: "Employee not found" });
+        }
+        return res.status(200).json({ Status: true, Result: result });
+    });
 });
 
 router.delete('/delete/:id', (req, res) => {

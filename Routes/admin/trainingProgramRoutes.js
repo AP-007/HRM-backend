@@ -133,7 +133,36 @@ router.post('/add_employees', (req, res) => {
                     console.error("Error adding employees to training program:", insertErr);
                     return res.status(500).json({ Status: false, Error: "Query Error" });
                 }
-                return res.status(201).json({ Status: true, Result: { employee_ids, training_program_id } });
+                const selectQuery = "SELECT name FROM training_program WHERE id = ?";
+                con.query(selectQuery, [training_program_id], (selectErr, selectResult) => {
+                    if (selectErr) {
+                        console.error("Error retrieving training program name:", selectErr);
+                        return res.status(500).json({ Status: false, Error: "Query Error" });
+                    }
+                    const program_name = selectResult[0].name;
+                    const notificationPromises = employee_ids.map(employee_id => {
+                        const notificationMessage = `You have been added to training program "${program_name}".`;
+                        const notificationInsertQuery = "INSERT INTO notifications (title, message, type, date, employee_id) VALUES (?, ?, 'training', NOW(), ?)";
+                        return new Promise((resolve, reject) => {
+                            con.query(notificationInsertQuery, ["Training Program Added", notificationMessage, employee_id], (notificationErr, notificationResult) => {
+                                if (notificationErr) {
+                                    console.error("Error adding notification for employee:", notificationErr);
+                                    reject(notificationErr);
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        });
+                    });
+
+                    Promise.all(notificationPromises)
+                        .then(() => {
+                            return res.status(201).json({ Status: true, Result: { employee_ids, program_name } });
+                        })
+                        .catch(err => {
+                            return res.status(500).json({ Status: false, Error: "Error sending notifications" });
+                        });
+                });
             });
         });
     }
